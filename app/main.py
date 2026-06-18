@@ -1,0 +1,119 @@
+"""
+FastAPI application entry point for the RAG project.
+"""
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+
+from app.api.routes_chat import router as chat_router
+from app.api.routes_ingest import router as ingest_router
+from app.api.schemas import HealthResponse
+from app.core.config import get_settings
+from app.core.logging import setup_logging
+
+setup_logging()
+
+app = FastAPI(
+    title="RAG Project API",
+    description="Retrieval-Augmented Generation API built with FastAPI, LangGraph, and LangChain.",
+    version="1.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(ingest_router)
+app.include_router(chat_router)
+
+
+@app.get("/health", response_model=HealthResponse)
+def health() -> HealthResponse:
+    settings = get_settings()
+    return HealthResponse(status="ok", vector_store_provider=settings.vector_store_provider)
+
+
+@app.get("/", response_class=HTMLResponse)
+def root() -> str:
+    """Minimal HTML UI for manual testing of ingestion and chat endpoints."""
+    return """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>RAG Project - Test UI</title>
+<style>
+  body { font-family: -apple-system, Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #222; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.1rem; margin-top: 2rem; }
+  textarea, input[type=text], input[type=url] { width: 100%; padding: 8px; box-sizing: border-box; font-size: 0.95rem; }
+  button { padding: 8px 16px; margin-top: 8px; cursor: pointer; }
+  pre { background: #f4f4f4; padding: 12px; border-radius: 6px; white-space: pre-wrap; word-break: break-word; }
+  .section { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+  <h1>RAG Project - Test UI</h1>
+
+  <div class="section">
+    <h2>Ingest Website</h2>
+    <input type="url" id="urlInput" placeholder="https://example.com" />
+    <label><input type="checkbox" id="playwright" /> Use Playwright (JS-heavy sites)</label>
+    <button onclick="ingestUrl()">Ingest URL</button>
+    <pre id="urlResult"></pre>
+  </div>
+
+  <div class="section">
+    <h2>Upload File (PDF, DOCX, TXT, MD)</h2>
+    <input type="file" id="fileInput" />
+    <button onclick="ingestFile()">Upload &amp; Ingest</button>
+    <pre id="fileResult"></pre>
+  </div>
+
+  <div class="section">
+    <h2>Chat</h2>
+    <input type="text" id="conversationId" value="default" placeholder="conversation id" />
+    <textarea id="chatInput" rows="3" placeholder="Ask one or more questions..."></textarea>
+    <button onclick="sendChat()">Send</button>
+    <pre id="chatResult"></pre>
+  </div>
+
+<script>
+async function ingestUrl() {
+  const url = document.getElementById('urlInput').value;
+  const usePlaywright = document.getElementById('playwright').checked;
+  const res = await fetch('/ingest/url', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({url, use_playwright: usePlaywright})
+  });
+  document.getElementById('urlResult').textContent = JSON.stringify(await res.json(), null, 2);
+}
+
+async function ingestFile() {
+  const fileInput = document.getElementById('fileInput');
+  if (!fileInput.files.length) return;
+  const formData = new FormData();
+  formData.append('file', fileInput.files[0]);
+  const res = await fetch('/ingest/file', { method: 'POST', body: formData });
+  document.getElementById('fileResult').textContent = JSON.stringify(await res.json(), null, 2);
+}
+
+async function sendChat() {
+  const message = document.getElementById('chatInput').value;
+  const conversation_id = document.getElementById('conversationId').value || 'default';
+  const res = await fetch('/chat', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({message, conversation_id})
+  });
+  document.getElementById('chatResult').textContent = JSON.stringify(await res.json(), null, 2);
+}
+</script>
+</body>
+</html>
+"""

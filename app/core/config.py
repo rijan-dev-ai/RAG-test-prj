@@ -10,16 +10,8 @@ from pydantic import SecretStr
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    # HuggingFace -- local embeddings, no API key needed
-    hf_embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
-
-
-    #groq onl LLM
-    groq_api_key: SecretStr = SecretStr("")
-    groq_chat_model: str = "llama-3.3-70b-versatile"
-
     # OpenAI
-    openai_api_key: str = ""
+    openai_api_key: SecretStr = SecretStr("")
     openai_chat_model: str = "gpt-4o-mini"
     openai_embedding_model: str = "text-embedding-3-small"
 

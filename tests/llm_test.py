@@ -1,11 +1,12 @@
 from app.graph.nodes import _get_llm
 from langchain_core.messages import HumanMessage
-
+import os
 
 def main():
     print("Testing LLM...\n")
-
+    print(repr(os.environ.get("OPENAI_API_KEY")))
     llm = _get_llm(temperature=0.2)
+    
     response = llm.invoke([HumanMessage(content="Say hello in one sentence.")])
 
     print("\n🧠 MODEL OUTPUT:")

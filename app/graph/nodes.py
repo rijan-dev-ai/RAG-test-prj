@@ -18,43 +18,20 @@ from app.core.logging import get_logger
 from app.graph.state import RAGState, SubQuery
 from app.vectorstore.base import BaseVectorStore
 
+
+from app.prompts.templates import DECOMPOSITION_PROMPT, GENERATION_PROMPT 
+
 logger = get_logger(__name__)
 
 
 def _get_llm(temperature: float = 0.0) -> ChatOpenAI:
     settings = get_settings()
 
-    print("🔥 GROQ KEY LOADED:", bool(settings.groq_api_key))
-    print("🔥 MODEL:", settings.groq_chat_model)
-
     return ChatOpenAI(
-        model=settings.groq_chat_model,
+        model=settings.openai_chat_model,
         temperature=temperature,
-        api_key=settings.groq_api_key,
-        base_url="https://api.groq.com/openai/v1",
+        api_key=settings.openai_api_key
     )
-
-DECOMPOSITION_PROMPT = """You are a query analysis assistant for a Retrieval-Augmented Generation system.
-
-Given the conversation history and the user's latest message, do the following:
-1. Resolve any pronouns or references using the conversation history so each sub-query is self-contained \
-(e.g. "what about its pricing?" -> "What is the pricing of <Product X>?").
-2. If the message contains multiple distinct questions or asks for multiple pieces of information, \
-split it into separate standalone sub-queries.
-3. If the message is a single simple question, return it as a single sub-query (rewritten to be \
-self-contained if needed).
-4. If the message is conversational and does not require document retrieval (e.g. "thanks", "hello"), \
-return an empty list.
-
-Respond with ONLY a JSON object in this exact format, no markdown fences, no extra text:
-{{"sub_queries": ["question 1", "question 2", ...]}}
-
-Conversation history:
-{history}
-
-Latest user message:
-{query}
-"""
 
 
 def analyze_and_decompose_query(state: RAGState) -> dict[str, Any]:
@@ -145,27 +122,7 @@ def make_retrieve_node(vector_store: BaseVectorStore, k: int = 4):
     return retrieve
 
 
-GENERATION_PROMPT = """You are a helpful assistant answering questions using retrieved context.
 
-Conversation history:
-{history}
-
-The user's original message was:
-{original_query}
-
-It was broken down into the following sub-questions, each with retrieved context:
-
-{context_blocks}
-
-Instructions:
-- Answer the user's original message fully, addressing each sub-question.
-- Use ONLY the retrieved context to answer factual questions. If the context does not contain \
-the answer, say so honestly rather than making something up.
-- Write a single, well-structured, coherent response (do not just list answers per sub-question \
-unless that structure makes sense for the user's request).
-- When you use information from a source, mention it naturally (e.g., "According to [source]...").
-- If the message was conversational (e.g. a greeting) and no context was retrieved, respond naturally.
-"""
 
 
 def generate_response(state: RAGState) -> dict[str, Any]:

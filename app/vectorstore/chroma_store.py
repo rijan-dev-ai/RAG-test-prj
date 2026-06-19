@@ -23,12 +23,10 @@ class ChromaVectorStore(BaseVectorStore):
 
     def __init__(self, persist_directory: str = "./data/chroma") -> None:
         settings = get_settings()
-        self._embeddings = HuggingFaceEmbeddings(model_name=settings.hf_embedding_model)
-        
-        '''self._embeddings = OpenAIEmbeddings(
+        self._embeddings = OpenAIEmbeddings(
             model=settings.openai_embedding_model,
-            api_key=settings.groq_api_key,
-        )'''
+            api_key=settings.openai_api_key,
+        )
         self._store = Chroma(
             collection_name="rag-project",
             embedding_function=self._embeddings,

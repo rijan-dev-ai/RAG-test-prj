@@ -21,12 +21,11 @@ class PineconeVectorStore(BaseVectorStore):
     def __init__(self) -> None:
         settings = get_settings()
         self._settings = settings
-        self._embeddings = HuggingFaceEmbeddings(model_name=settings.hf_embedding_model)
 
-        """self._embeddings = OpenAIEmbeddings(
+        self._embeddings = OpenAIEmbeddings(
             model=settings.openai_embedding_model,
-            api_key=settings.groq_api_key,
-        )"""
+            api_key=settings.openai_api_key,
+        )
 
         self._client = Pinecone(api_key=settings.pinecone_api_key)
         self._index_name = settings.pinecone_index_name

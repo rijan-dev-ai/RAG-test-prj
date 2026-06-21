@@ -26,7 +26,6 @@ Latest user message:
 """
 
 
-
 GENERATION_PROMPT = """You are a helpful assistant answering questions using retrieved context.
 
 Conversation history:

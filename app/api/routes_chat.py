@@ -2,7 +2,9 @@
 API routes for querying the RAG system via the LangGraph workflow.
 """
 from fastapi import APIRouter, HTTPException
+
 from langchain_core.messages import HumanMessage
+from langchain_core.runnables import RunnableConfig
 
 from app.api.schemas import ChatRequest, ChatResponse, SourceCitation, SubQueryResult
 from app.core.logging import get_logger
@@ -23,7 +25,7 @@ def chat(request: ChatRequest) -> ChatResponse:
     vector_store = get_vector_store()
     graph = build_rag_graph(vector_store, retrieval_k=request.retrieval_k)
 
-    config = {"configurable": {"thread_id": request.conversation_id}}
+    config: RunnableConfig = {"configurable": {"thread_id": request.conversation_id}}
 
     try:
         result = graph.invoke(
@@ -34,7 +36,7 @@ def chat(request: ChatRequest) -> ChatResponse:
                 "final_answer": None,
                 "sources": [],
             },
-            config=config,
+            config:=config,
         )
     except Exception as exc:  # noqa: BLE001
         logger.exception("Chat graph invocation failed")

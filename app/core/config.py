@@ -15,14 +15,14 @@ class Settings(BaseSettings):
     openai_chat_model: str = "gpt-4o-mini"
     openai_embedding_model: str = "text-embedding-3-small"
 
+    # Vector store
+    vector_store_provider: str = "pinecone"  # "pinecone" | "chroma"
+
     # Pinecone
     pinecone_api_key: str = ""
     pinecone_environment: str = "us-east-1"
     pinecone_index_name: str = "rag-project-index"
     pinecone_cloud: str = "aws"
-
-    # Vector store
-    vector_store_provider: str = "pinecone"  # "pinecone" | "chroma"
 
     # Chunking
     chunk_size: int = 1000

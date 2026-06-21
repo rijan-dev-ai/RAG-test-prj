@@ -7,6 +7,7 @@ Node implementations for the RAG LangGraph workflow:
 3. generate_response - aggregate retrieved context and synthesize a final answer
    with source citations.
 """
+
 import json
 from typing import Any
 
@@ -50,7 +51,7 @@ def analyze_and_decompose_query(state: RAGState) -> dict[str, Any]:
     prompt = DECOMPOSITION_PROMPT.format(history=history_text, query=query)
 
     response = llm.invoke([HumanMessage(content=prompt)])
-    raw = response.content
+    raw = _content_to_str(response.content)
 
     sub_query_texts = _parse_sub_queries(raw, fallback=query)
 
@@ -83,6 +84,18 @@ def _parse_sub_queries(raw: str, fallback: str) -> list[str]:
     except (json.JSONDecodeError, AttributeError):
         logger.warning("Failed to parse decomposition JSON, falling back to original query")
         return [fallback]
+    
+def _content_to_str(content: str | list[str | dict[Any, Any]]) -> str:
+    """Coerce a LangChain message content field to plain text."""
+    if isinstance(content, str):
+        return content
+    parts: list[str] = []
+    for item in content:
+        if isinstance(item, str):
+            parts.append(item)
+        elif isinstance(item, dict) and isinstance(item.get("text"), str):
+            parts.append(item["text"])
+    return "".join(parts)
 
 
 def make_retrieve_node(vector_store: BaseVectorStore, k: int = 4):
@@ -120,7 +133,6 @@ def make_retrieve_node(vector_store: BaseVectorStore, k: int = 4):
         return {"sub_queries": updated_sub_queries}
 
     return retrieve
-
 
 
 
@@ -164,7 +176,7 @@ def generate_response(state: RAGState) -> dict[str, Any]:
 
     llm = _get_llm(temperature=0.2)
     response = llm.invoke([HumanMessage(content=prompt)])
-    final_answer = response.content.strip()
+    final_answer = _content_to_str(response.content).strip()
 
     logger.info("Generated final answer (%d chars), %d unique sources", len(final_answer), len(sources))
 
